@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowBoard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Light Mode */
+            --bg-color-light: #f4f7f9;
+            --surface-color-light: #ffffff;
+            --text-primary-light: #1a1a1a;
+            --text-secondary-light: #6b7280;
+            --accent-color-light: #3b82f6;
+            --accent-color-danger-light: #ef4444;
+            --border-color-light: #e5e7eb;
+            --shadow-color-light: rgba(101, 119, 134, 0.2);
+            --shadow-hover-color-light: rgba(101, 119, 134, 0.35);
+
+            /* Dark Mode */
+            --bg-color-dark: #111827;
+            --surface-color-dark: #1f2937;
+            --text-primary-dark: #f9fafb;
+            --text-secondary-dark: #9ca3af;
+            --accent-color-dark: #60a5fa;
+            --accent-color-danger-dark: #f87171;
+            --border-color-dark: #374151;
+            --shadow-color-dark: rgba(0, 0, 0, 0.25);
+            --shadow-hover-color-dark: rgba(0, 0, 0, 0.4);
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .light-mode { background-color: var(--bg-color-light); color: var(--text-primary-light); }
+        .dark-mode { background-color: var(--bg-color-dark); color: var(--text-primary-dark); }
+
+        .app-container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap; }
+        .header-left { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+        .app-title { font-size: 2rem; font-weight: 700; margin-right: 1rem; }
+        .total-tasks-container { display: flex; align-items: center; gap: 0.75rem; font-size: 1rem; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 500; transition: all 0.2s; }
+        .total-tasks-container svg { width: 1.2em; height: 1.2em; flex-shrink: 0; }
+        .light-mode .total-tasks-container { background-color: var(--surface-color-light); color: var(--text-secondary-light); border: 1px solid var(--border-color-light); box-shadow: 0 2px 5px var(--shadow-color-light); }
+        .dark-mode .total-tasks-container { background-color: var(--surface-color-dark); color: var(--text-secondary-dark); border: 1px solid var(--border-color-dark); box-shadow: 0 2px 5px var(--shadow-color-dark); }
+
+        /* --- PERFECTED THEME SWITCHER --- */
+        .theme-switcher { position: relative; display: flex; align-items: center; padding: 4px; border-radius: 999px; }
+        .light-mode .theme-switcher { background-color: #e0e5ec; }
+        .dark-mode .theme-switcher { background-color: #2c3a4b; }
+        .theme-switcher-button { background: transparent; border: none; cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; z-index: 2; transition: color 0.3s; border-radius: 50%; }
+        .theme-switcher-button svg { width: 22px; height: 22px; }
+        .light-mode .theme-switcher-button { color: var(--text-secondary-light); }
+        .dark-mode .theme-switcher-button { color: var(--text-secondary-dark); }
+        .light-mode .theme-switcher-button.active { color: var(--accent-color-light); }
+        .dark-mode .theme-switcher-button.active { color: var(--accent-color-dark); }
+        .theme-switcher-backdrop { position: absolute; width: 36px; height: 36px; top: 4px; left: 4px; border-radius: 999px; z-index: 1; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .light-mode .theme-switcher-backdrop { background-color: var(--surface-color-light); box-shadow: 0 2px 5px var(--shadow-color-light); }
+        .dark-mode .theme-switcher-backdrop { background-color: var(--surface-color-dark); box-shadow: 0 2px 5px var(--shadow-color-dark); }
+        .dark-mode .theme-switcher-backdrop { transform: translateX(36px); }
+
+        .view { display: none; }
+        .view.active-view { display: block; }
+
+        .folders-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .folders-header h2 { font-size: 1.5rem; }
+        .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; }
+        .folder-card { padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
+        .light-mode .folder-card { background-color: var(--surface-color-light); border: 1px solid var(--border-color-light); box-shadow: 0 4px 6px -1px var(--shadow-color-light), 0 2px 4px -2px var(--shadow-color-light); }
+        .light-mode .folder-card:hover { box-shadow: 0 10px 15px -3px var(--shadow-hover-color-light), 0 4px 6px -4px var(--shadow-hover-color-light); transform: translateY(-5px); }
+        .dark-mode .folder-card { background-color: var(--surface-color-dark); border: 1px solid var(--border-color-dark); box-shadow: 0 4px 6px -1px var(--shadow-color-dark), 0 2px 4px -2px var(--shadow-color-dark); }
+        .dark-mode .folder-card:hover { box-shadow: 0 10px 15px -3px var(--shadow-hover-color-dark), 0 4px 6px -4px var(--shadow-hover-color-dark); transform: translateY(-5px); }
+        .folder-card-content { display: flex; align-items: center; gap: 1rem; }
+        .folder-card-content svg { width: 2rem; height: 2rem; color: var(--accent-color-light); flex-shrink: 0; }
+        .dark-mode .folder-card-content svg { color: var(--accent-color-dark); }
+        .folder-info h3 { margin: 0; font-size: 1.2rem; word-break: break-word; }
+        .folder-info p { margin: 0; font-size: 0.9rem; }
+        .light-mode .folder-info p { color: var(--text-secondary-light); }
+        .dark-mode .folder-info p { color: var(--text-secondary-dark); }
+        
+        .folder-card-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+        .folder-card:hover .folder-card-actions { opacity: 1; pointer-events: auto; }
+        .folder-action-btn { background: transparent; border: none; cursor: pointer; transition: all 0.2s; padding: 5px; border-radius: 50%; display:flex; align-items:center; justify-content:center; }
+        .folder-action-btn:hover { background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
+        .folder-action-btn svg { width: 18px; height: 18px; }
+        .light-mode .folder-action-btn { color: var(--text-secondary-light); }
+        .dark-mode .folder-action-btn { color: var(--text-secondary-dark); }
+
+        .add-folder-card { padding: 1.5rem; border-radius: 12px; cursor: pointer; transition: all 0.2s ease-in-out; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.5rem; }
+        .add-folder-card svg { width: 2.5rem; height: 2.5rem; transition: transform 0.2s ease-in-out; }
+        .add-folder-card:hover svg { transform: scale(1.1); }
+        .light-mode .add-folder-card { border: 2px dashed var(--border-color-light); color: var(--text-secondary-light); }
+        .light-mode .add-folder-card:hover { background-color: #eef2ff; border-color: var(--accent-color-light); color: var(--accent-color-light); }
+        .dark-mode .add-folder-card { border: 2px dashed var(--border-color-dark); color: var(--text-secondary-dark); }
+        .dark-mode .add-folder-card:hover { background-color: #374151; border-color: var(--accent-color-dark); color: var(--accent-color-dark); }
+
+        .board-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+        #back-to-folders-btn { background: none; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; transition: all 0.2s; }
+        #back-to-folders-btn svg { width: 24px; height: 24px; }
+        .light-mode #back-to-folders-btn { border-color: var(--border-color-light); color: var(--text-secondary-light); background-color: var(--surface-color-light); box-shadow: 0 2px 5px var(--shadow-color-light); }
+        .light-mode #back-to-folders-btn:hover { background-color: var(--border-color-light); color: var(--text-primary-light); transform: scale(1.05); box-shadow: 0 4px 8px var(--shadow-hover-color-light); }
+        .dark-mode #back-to-folders-btn { border-color: var(--border-color-dark); color: var(--text-secondary-dark); background-color: var(--surface-color-dark); box-shadow: 0 2px 5px var(--shadow-color-dark); }
+        .dark-mode #back-to-folders-btn:hover { background-color: var(--border-color-dark); color: var(--text-primary-dark); transform: scale(1.05); box-shadow: 0 4px 8px var(--shadow-hover-color-dark); }
+
+        #board-title { font-size: 1.5rem; margin: 0; }
+        .kanban-board { display: grid; grid-auto-columns: 300px; grid-auto-flow: column; gap: 2.5rem; overflow-x: auto; padding: 1rem; }
+        .kanban-column { width: 300px; border-radius: 12px; padding: 1rem; transition: all 0.2s; }
+        .light-mode .kanban-column { background-color: #f0f3f5; border: 1px solid var(--border-color-light); box-shadow: 0 4px 6px -1px var(--shadow-color-light), 0 2px 4px -2px var(--shadow-color-light); }
+        .dark-mode .kanban-column { background-color: #1a2332; border: 1px solid var(--border-color-dark); box-shadow: 0 4px 6px -1px var(--shadow-color-dark), 0 2px 4px -2px var(--shadow-color-dark); }
+        .column-header { display: flex; justify-content: space-between; align-items: center; padding: 0 0.5rem 1rem 0.5rem; border-bottom: 2px solid; margin-bottom: 1rem; }
+        #col-todo .column-header { border-color: #f59e0b; }
+        #col-working .column-header { border-color: #3b82f6; }
+        #col-paused .column-header { border-color: #ef4444; }
+        #col-finished .column-header { border-color: #22c55e; }
+        .column-title { font-weight: 600; font-size: 1rem; }
+        .column-task-count { font-size: 0.9rem; padding: 0.2rem 0.6rem; border-radius: 10px; }
+        .light-mode .column-task-count { background-color: var(--border-color-light); color: var(--text-secondary-light); }
+        .dark-mode .column-task-count { background-color: var(--border-color-dark); color: var(--text-secondary-dark); }
+        .task-list { min-height: 100px; display: flex; flex-direction: column; gap: 0.75rem; padding-bottom: 1rem; }
+        .task-card { padding: 1rem; border-radius: 8px; cursor: grab; position: relative; word-wrap: break-word; transition: all 0.2s; }
+        .light-mode .task-card { background-color: var(--surface-color-light); box-shadow: 0 2px 4px var(--shadow-color-light); }
+        .light-mode .task-card:hover { transform: scale(1.03); box-shadow: 0 4px 8px var(--shadow-hover-color-light); }
+        .dark-mode .task-card { background-color: #2c3a4b; box-shadow: 0 2px 4px var(--shadow-color-dark); }
+        .dark-mode .task-card:hover { transform: scale(1.03); box-shadow: 0 4px 8px var(--shadow-hover-color-dark); }
+        .task-card.dragging { opacity: 0.5; transform: scale(1.05) rotate(3deg); box-shadow: 0 10px 15px -3px var(--shadow-hover-color-light); }
+        .kanban-column.drag-over { transform: scale(1.01); }
+        .light-mode .kanban-column.drag-over { background-color: #eef2ff; }
+        .dark-mode .kanban-column.drag-over { background-color: #252f3e; }
+        .delete-task-btn { position: absolute; top: 5px; right: 5px; background: transparent; border: none; cursor: pointer; opacity: 0; transition: all 0.2s; border-radius: 50%; padding: 4px; display:flex; align-items:center; justify-content:center; pointer-events: none; }
+        .task-card:hover .delete-task-btn { opacity: 0.6; pointer-events: auto;}
+        .delete-task-btn svg { width: 16px; height: 16px; }
+        .delete-task-btn:hover { opacity: 1 !important; background-color: rgba(0,0,0,0.1); transform: scale(1.1); }
+        .light-mode .delete-task-btn { color: var(--text-secondary-light); }
+        .dark-mode .delete-task-btn { color: var(--text-secondary-dark); }
+        
+        .add-task-form { display: flex; gap: 0.5rem; align-items: center; }
+        .add-task-form input { padding: 0.75rem; border-radius: 8px; border: 1px solid; font-family: 'Poppins', sans-serif; font-size: 0.9rem; flex-grow: 1; transition: all 0.2s; }
+        .add-task-form button { border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease-in-out; width: 40px; height: 40px; flex-shrink: 0; }
+        .add-task-form button:hover { transform: scale(1.1) rotate(10deg); }
+        .add-task-form button svg { width: 20px; height: 20px; }
+        .light-mode .add-task-form input { background-color: var(--surface-color-light); border-color: var(--border-color-light); color: var(--text-primary-light); }
+        .light-mode .add-task-form input:focus { border-color: var(--accent-color-light); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .light-mode .add-task-form button { background-color: var(--accent-color-light); color: white; }
+        .light-mode .add-task-form button:hover { background-color: #2563eb; }
+        .dark-mode .add-task-form input { background-color: var(--surface-color-dark); border-color: var(--border-color-dark); color: var(--text-primary-dark); }
+        .dark-mode .add-task-form input:focus { border-color: var(--accent-color-dark); box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2); }
+        .dark-mode .add-task-form button { background-color: var(--accent-color-dark); color: var(--text-primary-dark); }
+        .dark-mode .add-task-form button:hover { background-color: #3b82f6; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal { padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px; transform: scale(0.95); transition: transform 0.3s; }
+        .modal-overlay.visible .modal { transform: scale(1); }
+        .light-mode .modal { background-color: var(--surface-color-light); box-shadow: 0 10px 25px var(--shadow-hover-color-light); }
+        .dark-mode .modal { background-color: var(--surface-color-dark); box-shadow: 0 10px 25px var(--shadow-hover-color-dark); }
+        
+        .modal h2 { margin-top: 0; font-size: 1.5rem; }
+        .modal p { margin: 0.5rem 0 1.5rem; font-size: 1rem; }
+        .light-mode .modal p { color: var(--text-secondary-light); }
+        .dark-mode .modal p { color: var(--text-secondary-dark); }
+        .modal p strong { font-weight: 600; }
+        .light-mode .modal p strong { color: var(--text-primary-light); }
+        .dark-mode .modal p strong { color: var(--text-primary-dark); }
+        
+        .modal-input { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid; font-family: 'Poppins', sans-serif; font-size: 1rem; margin-top: 1rem; box-sizing: border-box; }
+        .light-mode .modal-input { border-color: var(--border-color-light); background-color: var(--bg-color-light); color: var(--text-primary-light); }
+        .dark-mode .modal-input { border-color: var(--border-color-dark); background-color: var(--bg-color-dark); color: var(--text-primary-dark); }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
+        .modal-button { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
+        .modal-button-save { background-color: var(--accent-color-light); color: white; }
+        .dark-mode .modal-button-save { background-color: var(--accent-color-dark); }
+        .modal-button-delete { background-color: var(--accent-color-danger-light); color: white; }
+        .dark-mode .modal-button-delete { background-color: var(--accent-color-danger-dark); }
+        .modal-button-cancel { background-color: transparent; }
+        .light-mode .modal-button-cancel { color: var(--text-secondary-light); border: 1px solid var(--border-color-light); }
+        .dark-mode .modal-button-cancel { color: var(--text-secondary-dark); border: 1px solid var(--border-color-dark); }
+        .modal-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow-color-dark); }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-left">
+                <h1 class="app-title">FlowBoard</h1>
+                <div class="total-tasks-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zM2 9.75A.75.75 0 012.75 9h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 9.75zM2 14.75A.75.75 0 012.75 14h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 14.75z" clip-rule="evenodd" /></svg>
+                    <span id="total-tasks-count"></span>
+                </div>
+                <div class="total-tasks-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v4.59L7.3 9.24a.75.75 0 00-1.1 1.02l3.25 3.5a.75.75 0 001.1 0l3.25-3.5a.75.75 0 10-1.1-1.02l-1.95 2.1V6.75z" clip-rule="evenodd" /></svg>
+                    <span id="finished-tasks-count"></span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div id="theme-switcher" class="theme-switcher">
+                    <span class="theme-switcher-backdrop"></span>
+                    <button id="light-mode-btn" class="theme-switcher-button" aria-label="Switch to light mode">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM10 15a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15zM10 7a3 3 0 100 6 3 3 0 000-6zM15.657 4.343a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 01-1.06-1.06l1.06-1.061a.75.75 0 011.06 0zM6.464 13.536a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM18 10a.75.75 0 01.75.75h1.5a.75.75 0 010-1.5h-1.5a.75.75 0 01-.75.75zM2 10a.75.75 0 01.75.75h1.5a.75.75 0 010-1.5h-1.5A.75.75 0 012 10zM14.621 14.621a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM4.343 5.404a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06z" clip-rule="evenodd" /></svg>
+                    </button>
+                    <button id="dark-mode-btn" class="theme-switcher-button" aria-label="Switch to dark mode">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M7.455 2.104a.75.75 0 00-.965.524 8.5 8.5 0 009.322 11.216.75.75 0 00.524-.965A7 7 0 017.455 2.104z" /></svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main id="folders-view" class="view active-view">
+            <div class="folders-header">
+                <h2>My Folders</h2>
+            </div>
+            <div id="folders-grid" class="folders-grid"></div>
+        </main>
+
+        <main id="board-view" class="view">
+            <div class="board-header">
+                <button id="back-to-folders-btn" aria-label="Back to Folders">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" /></svg>
+                </button>
+                <h2 id="board-title"></h2>
+            </div>
+            <div class="kanban-board"></div>
+        </main>
+    </div>
+
+    <div id="add-folder-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Create New Folder</h2>
+            <input type="text" id="modal-folder-name" class="modal-input" placeholder="Enter folder name...">
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="modal-button modal-button-cancel">Cancel</button>
+                <button id="modal-save-btn" class="modal-button modal-button-save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-folder-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Delete Folder</h2>
+            <p>Are you sure you want to delete the folder "<strong id="delete-folder-name"></strong>"? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button id="delete-cancel-btn" class="modal-button modal-button-cancel">Cancel</button>
+                <button id="delete-confirm-btn" class="modal-button modal-button-delete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const icons = {
+                folder: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3.75 3A1.75 1.75 0 002 4.75v10.5c0 .966.784 1.75 1.75 1.75h12.5A1.75 1.75 0 0018 15.25v-8.5A1.75 1.75 0 0016.25 5h-4.836a.25.25 0 01-.177-.073L9.823 3.513A1.75 1.75 0 008.586 3H3.75z" /></svg>`,
+                trash: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193v-.443A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clip-rule="evenodd" /></svg>`,
+                plus: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>`,
+                paperPlane: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3.105 3.105a.75.75 0 01.884-.043l11.25 5.25a.75.75 0 010 1.372l-11.25 5.25a.75.75 0 01-.927-1.218L4.547 10l-1.38-6.422a.75.75 0 01.043-.884z" /></svg>`,
+                close: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>`,
+                pencil: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" /></svg>`
+            };
+
+            let data = { folders: [], settings: { theme: 'light-mode' } };
+            let currentFolderId = null;
+            let draggedTaskId = null;
+            let folderIdToDelete = null;
+            
+            const body = document.body;
+            const totalTasksCountEl = document.getElementById('total-tasks-count');
+            const finishedTasksCountEl = document.getElementById('finished-tasks-count');
+            const foldersView = document.getElementById('folders-view');
+            const boardView = document.getElementById('board-view');
+            const foldersGrid = document.getElementById('folders-grid');
+            const boardTitleEl = document.getElementById('board-title');
+            const kanbanBoard = document.querySelector('.kanban-board');
+            const backToFoldersBtn = document.getElementById('back-to-folders-btn');
+            
+            const themeSwitcher = document.getElementById('theme-switcher');
+            const lightModeBtn = document.getElementById('light-mode-btn');
+            const darkModeBtn = document.getElementById('dark-mode-btn');
+            
+            const addFolderModal = document.getElementById('add-folder-modal');
+            const modalFolderNameInput = document.getElementById('modal-folder-name');
+            const modalSaveBtn = document.getElementById('modal-save-btn');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+            const deleteFolderModal = document.getElementById('delete-folder-modal');
+            const deleteFolderNameEl = document.getElementById('delete-folder-name');
+            const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+            const deleteCancelBtn = document.getElementById('delete-cancel-btn');
+
+            const columns = [ { id: 'todo', title: 'Things to Do' }, { id: 'working', title: 'Working' }, { id: 'paused', title: 'Paused' }, { id: 'finished', title: 'Finished' }];
+
+            const saveData = () => { localStorage.setItem('flowBoardData', JSON.stringify(data)); };
+            const loadData = () => {
+                const savedData = localStorage.getItem('flowBoardData');
+                if (savedData) data = JSON.parse(savedData);
+                else {
+                    data = {
+                        folders: [ { id: `folder-${Date.now()}`, name: 'School Project', tasks: [] }, { id: `folder-${Date.now() + 1}`, name: 'Home Renovation', tasks: [] } ],
+                        settings: { theme: 'light-mode' }
+                    };
+                }
+            };
+            
+            const applyTheme = () => { 
+                body.className = data.settings.theme;
+                themeSwitcher.className = `theme-switcher ${data.settings.theme}`;
+                if (data.settings.theme === 'light-mode') {
+                    lightModeBtn.classList.add('active');
+                    darkModeBtn.classList.remove('active');
+                } else {
+                    lightModeBtn.classList.remove('active');
+                    darkModeBtn.classList.add('active');
+                }
+            };
+
+            const setTheme = (theme) => {
+                data.settings.theme = theme;
+                applyTheme();
+                saveData();
+            };
+            
+            const showFoldersView = () => { currentFolderId = null; boardView.classList.remove('active-view'); foldersView.classList.add('active-view'); renderFolders(); updateCounters(); };
+            const showBoardView = (folderId) => { currentFolderId = folderId; foldersView.classList.remove('active-view'); boardView.classList.add('active-view'); renderBoard(); };
+            
+            const openModal = (modal) => { modal.classList.add('visible'); };
+            const closeModal = (modal) => { modal.classList.remove('visible'); };
+
+            const renderFolders = () => {
+                foldersGrid.innerHTML = '';
+                data.folders.forEach(folder => {
+                    const folderCard = document.createElement('div');
+                    folderCard.className = 'folder-card';
+                    folderCard.dataset.folderId = folder.id;
+                    folderCard.innerHTML = `<div class="folder-card-content">${icons.folder}<div class="folder-info"><h3 data-folder-id="${folder.id}">${folder.name}</h3><p>${folder.tasks.length} tasks</p></div></div><div class="folder-card-actions"><button class="folder-action-btn rename-folder-btn" data-folder-id="${folder.id}" aria-label="Rename Folder">${icons.pencil}</button><button class="folder-action-btn delete-folder-btn" data-folder-id="${folder.id}" aria-label="Delete Folder">${icons.trash}</button></div>`;
+                    folderCard.addEventListener('click', (e) => { if (!e.target.closest('.folder-card-actions') && e.target.tagName !== 'INPUT') showBoardView(folder.id); });
+                    foldersGrid.appendChild(folderCard);
+                });
+                const addFolderCard = document.createElement('div');
+                addFolderCard.className = 'add-folder-card';
+                addFolderCard.innerHTML = `${icons.plus}<span>Add New Folder</span>`;
+                addFolderCard.addEventListener('click', () => { modalFolderNameInput.value = ''; openModal(addFolderModal); modalFolderNameInput.focus(); });
+                foldersGrid.appendChild(addFolderCard);
+                document.querySelectorAll('.delete-folder-btn').forEach(btn => btn.addEventListener('click', handleDeleteFolder));
+                document.querySelectorAll('.rename-folder-btn').forEach(btn => btn.addEventListener('click', handleRenameFolder));
+            };
+
+            const renderBoard = () => {
+                const folder = data.folders.find(f => f.id === currentFolderId);
+                if (!folder) { showFoldersView(); return; }
+                boardTitleEl.textContent = folder.name;
+                kanbanBoard.innerHTML = '';
+                columns.forEach(column => {
+                    const columnEl = document.createElement('div');
+                    columnEl.className = 'kanban-column';
+                    columnEl.dataset.status = column.id;
+                    const tasksInColumn = folder.tasks.filter(t => t.status === column.id);
+                    columnEl.innerHTML = `<div class="column-header"><h3 class="column-title">${column.title}</h3><span class="column-task-count">${tasksInColumn.length}</span></div><div class="task-list"></div><form class="add-task-form"><input type="text" placeholder="Add a new task..." required><button type="submit" aria-label="Add Task">${icons.paperPlane}</button></form>`;
+                    kanbanBoard.appendChild(columnEl);
+                    const taskList = columnEl.querySelector('.task-list');
+                    tasksInColumn.forEach(task => taskList.appendChild(createTaskCard(task)));
+                });
+                addBoardEventListeners();
+                updateCounters();
+            };
+
+            const createTaskCard = (task) => {
+                const taskCard = document.createElement('div');
+                taskCard.className = 'task-card';
+                taskCard.dataset.taskId = task.id;
+                taskCard.draggable = true;
+                taskCard.innerHTML = `<span>${task.content}</span><button class="delete-task-btn" data-task-id="${task.id}" aria-label="Delete Task">${icons.close}</button>`;
+                return taskCard;
+            };
+
+            const handleSaveFolder = () => {
+                const folderName = modalFolderNameInput.value.trim();
+                if (folderName) { data.folders.push({ id: `folder-${Date.now()}`, name: folderName, tasks: [] }); saveData(); renderFolders(); closeModal(addFolderModal); }
+            };
+            const handleDeleteFolder = (e) => {
+                folderIdToDelete = e.currentTarget.dataset.folderId;
+                const folder = data.folders.find(f => f.id === folderIdToDelete);
+                if (folder) {
+                    deleteFolderNameEl.textContent = folder.name;
+                    openModal(deleteFolderModal);
+                }
+            };
+            const confirmDeleteFolder = () => {
+                data.folders = data.folders.filter(f => f.id !== folderIdToDelete);
+                saveData();
+                renderFolders();
+                updateCounters();
+                closeModal(deleteFolderModal);
+                folderIdToDelete = null;
+            };
+            const handleRenameFolder = (e) => {
+                const folderId = e.currentTarget.dataset.folderId;
+                const h3 = document.querySelector(`h3[data-folder-id="${folderId}"]`);
+                const currentName = h3.textContent;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentName;
+                input.className = 'modal-input';
+                h3.replaceWith(input);
+                input.focus();
+                input.select();
+                const saveRename = () => {
+                    const newName = input.value.trim();
+                    if (newName && newName !== currentName) {
+                        const folder = data.folders.find(f => f.id === folderId);
+                        folder.name = newName;
+                        saveData();
+                    }
+                    renderFolders();
+                };
+                input.addEventListener('blur', saveRename);
+                input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); if (e.key === 'Escape') { input.value = currentName; input.blur();} });
+            };
+            const handleAddTask = (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const input = form.querySelector('input');
+                const taskContent = input.value.trim();
+                const status = form.closest('.kanban-column').dataset.status;
+                if (taskContent) { const folder = data.folders.find(f => f.id === currentFolderId); folder.tasks.push({ id: `task-${Date.now()}`, content: taskContent, status: status }); input.value = ''; saveData(); renderBoard(); }
+            };
+            const handleDeleteTask = (e) => {
+                const taskId = e.currentTarget.dataset.taskId;
+                const folder = data.folders.find(f => f.id === currentFolderId);
+                folder.tasks = folder.tasks.filter(t => t.id !== taskId);
+                saveData();
+                renderBoard();
+            };
+
+            const addBoardEventListeners = () => {
+                document.querySelectorAll('.add-task-form').forEach(form => form.addEventListener('submit', handleAddTask));
+                document.querySelectorAll('.delete-task-btn').forEach(btn => btn.addEventListener('click', handleDeleteTask));
+                document.querySelectorAll('.task-card').forEach(card => {
+                    card.addEventListener('dragstart', (e) => { draggedTaskId = e.target.dataset.taskId; setTimeout(() => e.target.classList.add('dragging'), 0); });
+                    card.addEventListener('dragend', (e) => { draggedTaskId = null; e.target.classList.remove('dragging'); });
+                });
+                document.querySelectorAll('.kanban-column').forEach(column => {
+                    column.addEventListener('dragover', (e) => { e.preventDefault(); column.classList.add('drag-over'); });
+                    column.addEventListener('dragleave', () => { column.classList.remove('drag-over'); });
+                    column.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        column.classList.remove('drag-over');
+                        const folder = data.folders.find(f => f.id === currentFolderId);
+                        const task = folder.tasks.find(t => t.id === draggedTaskId);
+                        if (task) { task.status = column.dataset.status; saveData(); renderBoard(); }
+                    });
+                });
+            };
+
+            const updateCounters = () => {
+                const counts = data.folders.reduce((acc, folder) => { folder.tasks.forEach(task => (task.status === 'finished' ? acc.finished++ : acc.active++)); return acc; }, { active: 0, finished: 0 });
+                totalTasksCountEl.textContent = `Active Tasks: ${counts.active}`;
+                finishedTasksCountEl.textContent = `Tasks Finished: ${counts.finished}`;
+            };
+
+            const init = () => {
+                loadData();
+                applyTheme();
+                showFoldersView();
+                lightModeBtn.addEventListener('click', () => setTheme('light-mode'));
+                darkModeBtn.addEventListener('click', () => setTheme('dark-mode'));
+                backToFoldersBtn.addEventListener('click', showFoldersView);
+                modalSaveBtn.addEventListener('click', handleSaveFolder);
+                modalCancelBtn.addEventListener('click', () => closeModal(addFolderModal));
+                addFolderModal.addEventListener('click', (e) => { if (e.target === addFolderModal) closeModal(addFolderModal); });
+                modalFolderNameInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleSaveFolder(); });
+                deleteConfirmBtn.addEventListener('click', confirmDeleteFolder);
+                deleteCancelBtn.addEventListener('click', () => closeModal(deleteFolderModal));
+                deleteFolderModal.addEventListener('click', (e) => { if (e.target === deleteFolderModal) closeModal(deleteFolderModal); });
+            };
+
+            init();
+        });
+    </script>
+
+</body>
+</html>
